@@ -1,0 +1,113 @@
+version: '3'
+services:
+
+  ledzermasterdbimage:
+    image: mysql:5.6
+    networks:
+      - test-network
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=ledzer_master_db
+
+  ledzercustomerdbimage:
+      image: mysql:5.6
+      networks:
+        - test-network
+      environment:
+        - MYSQL_ROOT_PASSWORD=root
+        - MYSQL_DATABASE=ledzer_customer_db
+
+  ledzerproductdbimage:
+      image: mysql:5.6
+      networks:
+        - test-network
+      environment:
+        - MYSQL_ROOT_PASSWORD=root
+        - MYSQL_DATABASE=ledzer_product_db
+
+  ledzerauthdbimage:
+      image: mysql:5.6
+      networks:
+        - test-network
+      environment:
+        - MYSQL_ROOT_PASSWORD=root
+        - MYSQL_DATABASE=ledzer_auth_db
+
+  eureka-service:
+    build: ./eureka-service
+    image: eureka-service
+    ports:
+      - "8761:8761"
+    networks:
+      - test-network
+
+  auth-service:
+    build: ./auth-service
+    image: auth-service
+    networks:
+      - test-network
+    ports:
+      - "9000:9000"
+    depends_on:
+      - eureka-service
+      - ledzerauthdbimage
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka
+
+  customer-service:
+    build: ./customer-service
+    image: customer-service
+    networks:
+      - test-network
+    ports:
+      - "9002:9002"
+    depends_on:
+      - eureka-service
+      - ledzercustomerdbimage
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka
+
+  master-service:
+    build: ./master-service
+    image: master-service
+    networks:
+      - test-network
+    ports:
+      - "9001:9001"
+    depends_on:
+      - eureka-service
+      - ledzermasterdbimage
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka
+
+  product-service:
+    build: ./product-service
+    image: product-service
+    networks:
+      - test-network
+    ports:
+      - "9003:9003"
+    depends_on:
+      - eureka-service
+      - ledzerproductdbimage
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka
+
+  gateway-service:
+    build: ./gateway-service
+    image: gateway-service
+    networks:
+      - test-network
+    ports:
+      - "9191:9191"
+    depends_on:
+      - eureka-service
+      - auth-service
+      - master-service
+      - customer-service
+      - product-service
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-service:8761/eureka
+
+networks:
+  test-network:
